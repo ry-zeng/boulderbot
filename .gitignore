@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -18,24 +19,27 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # Database
 *.db
 *.sqlite3
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
+# Logs
+*.log
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
+# Environment variables
+.env
 
 # OS
 .DS_Store

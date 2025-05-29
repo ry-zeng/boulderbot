@@ -234,13 +234,19 @@ class BoulderingRecommendationAgent:
         candidates = [b for b in candidates 
                      if b['approach_distance'] <= max_approach_distance]
         
-        # Score and rank candidates
-        scored_routes = []
+        # Apply strict grade filtering if preferred grades are specified
+        if preferred_grades:
+            candidates = [b for b in candidates if b['grade'] in preferred_grades]
         
+        # Apply strict hold filtering if preferred holds are specified
+        if preferred_holds:
+            candidates = [b for b in candidates 
+                        if all(hold in b['holds'] for hold in preferred_holds)]
+        
+        # Score remaining candidates
+        scored_routes = []
         for boulder in candidates:
-            score = self._calculate_score(
-                boulder, preferred_grades, preferred_holds
-            )
+            score = self._calculate_base_score(boulder)
             boulder['recommendation_score'] = score
             scored_routes.append(boulder)
         
@@ -251,33 +257,12 @@ class BoulderingRecommendationAgent:
         
         return recommendations
     
-    def _calculate_score(self, boulder: Dict, preferred_grades: List[str],
-                        preferred_holds: List[str]) -> float:
-        """Calculate recommendation score for a boulder"""
+    def _calculate_base_score(self, boulder: Dict) -> float:
+        """Calculate base score for a boulder without grade/hold preferences"""
         score = 0.0
         
         # Base score from rating
         score += boulder.get('rating', 0) * 20
-        
-        # Grade preference score
-        if preferred_grades:
-            boulder_grade = boulder.get('grade', '')
-            if boulder_grade in preferred_grades:
-                score += 30
-            else:
-                # Partial score for nearby grades
-                boulder_difficulty = self.grade_difficulty.get(boulder_grade, 0)
-                for grade in preferred_grades:
-                    preferred_difficulty = self.grade_difficulty.get(grade, 0)
-                    diff = abs(boulder_difficulty - preferred_difficulty)
-                    if diff <= 2:  # Within 2 grades
-                        score += max(0, 20 - diff * 5)
-        
-        # Hold type preference score
-        if preferred_holds and boulder.get('holds'):
-            boulder_holds = boulder['holds']
-            matching_holds = set(preferred_holds) & set(boulder_holds)
-            score += len(matching_holds) * 10
         
         # Distance penalty (closer is better)
         distance = boulder.get('distance', 0)

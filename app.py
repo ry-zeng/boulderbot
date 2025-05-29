@@ -4,12 +4,15 @@ import json
 import os
 from datetime import datetime
 from bouldering_agent import BoulderDatabase, BoulderingRecommendationAgent, Boulder
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 
 app = Flask(__name__)
 
 # Initialize the database and agent
 db = BoulderDatabase('boulders.db')
 agent = BoulderingRecommendationAgent(db)
+geocoder = Nominatim(user_agent="boulderbot")
 
 # Sample data for testing
 def initialize_sample_data():
@@ -195,6 +198,51 @@ def add_route():
             'error': str(e)
         }), 400
 
+@app.route('/api/geocode', methods=['POST'])
+def geocode_location():
+    """API endpoint for converting location text to coordinates"""
+    try:
+        data = request.get_json()
+        location_text = data.get('location', '').strip()
+        
+        if not location_text:
+            return jsonify({
+                'success': False,
+                'error': 'Location text is required'
+            }), 400
+
+        # Add 'USA' if not specified and input looks like a city or state
+        if not any(country in location_text.lower() for country in ['usa', 'united states', 'america']):
+            if not location_text.replace('.', '').replace('-', '').isdigit():  # Not a zip code
+                location_text += ', USA'
+        
+        # Try to geocode the location
+        location = geocoder.geocode(location_text)
+        
+        if location is None:
+            return jsonify({
+                'success': False,
+                'error': 'Location not found'
+            }), 404
+            
+        return jsonify({
+            'success': True,
+            'latitude': location.latitude,
+            'longitude': location.longitude,
+            'display_name': location.address
+        })
+        
+    except (GeocoderTimedOut, GeocoderUnavailable) as e:
+        return jsonify({
+            'success': False,
+            'error': 'Geocoding service temporarily unavailable'
+        }), 503
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port, debug=True)
