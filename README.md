@@ -17,7 +17,7 @@ A Python-based web scraper for collecting boulder problem data from Mountain Pro
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/boulderbot.git
+git clone https://github.com/ry-zeng/boulderbot.git
 cd boulderbot
 ```
 
